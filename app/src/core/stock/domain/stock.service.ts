@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
+import { IStockRepository } from './stock.repository.interface';
 
 export interface StockCheckItem {
   sku: string;
@@ -15,7 +14,10 @@ export interface StockAvailabilityError {
 
 @Injectable()
 export class StockService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(IStockRepository)
+    private readonly stockRepository: IStockRepository,
+  ) {}
 
   /**
    * Checks if there is enough stock for the given items.
@@ -24,21 +26,12 @@ export class StockService {
   async checkStockAvailability(
     tenantId: string,
     items: StockCheckItem[],
-    tx?: Prisma.TransactionClient,
   ): Promise<StockAvailabilityError[]> {
-    const prisma = tx || this.prisma;
     const errors: StockAvailabilityError[] = [];
-
-    // Optimize: fetch all needed SKUs in one query
-    const skus = items.map((i) => i.sku);
-    const stockLevels = await prisma.stockLevel.findMany({
-      where: {
-        tenantId,
-        sku: { in: skus },
-      },
-    });
-
-    const stockMap = new Map(stockLevels.map((s) => [s.sku, s]));
+    
+    const skus = items.map(i => i.sku);
+    const stockLevels = await this.stockRepository.findBySkus(tenantId, skus);
+    const stockMap = new Map(stockLevels.map(s => [s.sku, s]));
 
     for (const item of items) {
       const stock = stockMap.get(item.sku);
@@ -57,56 +50,49 @@ export class StockService {
   }
 
   /**
-   * Decreases stock for items.
-   * Assumes validation passed. Use Optimistic Concurrency Control via version if needed,
-   * but for simple decrement atomic update is often enough: available = available - qty.
-   * However, ARCH requires using 'version' field.
+   * Reserves stock for items using Optimistic Concurrency Control.
+   * Decrements 'available' and increments 'reserved'.
    */
-  async decreaseStock(
-    tenantId: string,
-    items: StockCheckItem[],
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  async reserveStock(tenantId: string, items: StockCheckItem[]): Promise<void> {
     for (const item of items) {
-      // Optimistic concurrency loop
-      // We need to read, check version, and update.
-      // Since we are inside a transaction (likely), we might lock or loop.
-      // ARCH says: "UPDATE ... WHERE version = :read_version"
+      let retries = 5;
+      let success = false;
 
-      // Since we need to read first:
-      const stock = await tx.stockLevel.findUnique({
-        where: { tenantId_sku: { tenantId, sku: item.sku } },
-      });
+      while (retries > 0) {
+        const stock = await this.stockRepository.findBySku(tenantId, item.sku);
+        
+        const available = stock ? stock.available : 0;
+        const currentVersion = stock ? stock.version : 0;
 
-      if (!stock) {
-        throw new Error(`Stock not found for SKU ${item.sku}`);
+        if (available < item.qty) {
+             throw new Error(`Insufficient stock for SKU ${item.sku}. Requested: ${item.qty}, Available: ${available}`);
+        }
+
+        if (!stock) {
+             throw new Error(`Stock record missing for SKU ${item.sku}`);
+        }
+
+        const updated = await this.stockRepository.updateStock(
+            tenantId, 
+            item.sku, 
+            currentVersion, 
+            {
+                availableDelta: -item.qty,
+                reservedDelta: item.qty
+            }
+        );
+
+        if (updated) {
+            success = true;
+            break;
+        }
+
+        retries--;
+        // Backoff could be added here
       }
 
-      const { count } = await tx.stockLevel.updateMany({
-        where: {
-          id: stock.id,
-          version: stock.version,
-          available: { gte: item.qty }, // Double check constraint
-        },
-        data: {
-          available: { decrement: item.qty },
-          reserved: { increment: item.qty }, // Usually "Create Order" reserves stock, "Ship" removes from reserved?
-          // Task says "Update Stock + Audit" on Create.
-          // Task "Ship" says "Корректировка резервов (снятие резерва)".
-          // So Create -> Reserve.
-          // available = physical - reserved?
-          // Usually: Available = OnHand - Reserved.
-          // If we decrement Available, we might increment Reserved.
-          // "available" in DB usually means "Available for sale".
-          // So: available -= qty, reserved += qty.
-          version: { increment: 1 },
-        },
-      });
-
-      if (count === 0) {
-        throw new Error(
-          `Stock update failed (optimistic lock or insufficient) for SKU ${item.sku}`,
-        );
+      if (!success) {
+        throw new Error(`Concurrency conflict for SKU ${item.sku} after retries`);
       }
     }
   }

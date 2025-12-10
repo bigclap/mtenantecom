@@ -1,8 +1,16 @@
 import { Module } from '@nestjs/common';
-import { OrderRepository } from './order.repository';
+import { PrismaModule } from '../../../../infrastructure/prisma/prisma.module';
+import { OrderPrismaRepository } from './order.repository';
+import { IOrderRepository } from '../../domain/order.repository.interface';
 
 @Module({
-  providers: [OrderRepository],
-  exports: [OrderRepository],
+  imports: [PrismaModule],
+  providers: [
+    {
+      provide: IOrderRepository,
+      useClass: OrderPrismaRepository,
+    },
+  ],
+  exports: [IOrderRepository],
 })
 export class OrderPrismaModule {}

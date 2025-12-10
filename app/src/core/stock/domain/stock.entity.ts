@@ -1,6 +1,9 @@
 export class StockLevel {
+  id: string;
   sku: string;
   tenantId: string;
-  qty: number;
+  available: number;
+  reserved: number;
   version: number;
+  updatedAt: Date;
 }
