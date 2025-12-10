@@ -39,7 +39,7 @@ export class OrderService {
   private isOrderContentEqual(existing: Order, dto: CreateOrderDto): boolean {
     // Compare Customer
     // Cast existing.customer to any or specific type
-    const existingCustomer = existing.customer as Record<string, any>;
+    const existingCustomer = existing.customer;
     if (JSON.stringify(existingCustomer) !== JSON.stringify(dto.customer)) {
       return false;
     }

@@ -1,7 +1,10 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { IOrderRepository, CreateOrderTxParams } from '../../domain/order.repository.interface';
-import { Order } from '../../domain/order.entity';
+import {
+  IOrderRepository,
+  CreateOrderTxParams,
+} from '../../domain/order.repository.interface';
+import { Order, OrderStatus } from '../../domain/order.entity';
 import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 
@@ -9,7 +12,10 @@ import { Prisma } from '@prisma/client';
 export class OrderPrismaRepository implements IOrderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByExternalId(tenantId: string, externalId: string): Promise<Order | null> {
+  async findByExternalId(
+    tenantId: string,
+    externalId: string,
+  ): Promise<Order | null> {
     const order = await this.prisma.order.findUnique({
       where: {
         tenantId_externalId: {
@@ -19,19 +25,41 @@ export class OrderPrismaRepository implements IOrderRepository {
       },
       include: { items: true },
     });
-    
+
     if (!order) return null;
 
     // Map Prisma Order to Domain Order (if needed, or just cast if compatible)
     return {
       ...order,
-      customer: order.customer as any,
-      status: order.status as any,
-      items: order.items.map(i => ({
+      customer: order.customer as Record<string, any>,
+      status: order.status as OrderStatus,
+      items: order.items.map((i) => ({
         id: i.id,
         sku: i.sku,
-        qty: i.qty
-      }))
+        qty: i.qty,
+      })),
+    };
+  }
+
+  async findById(tenantId: string, id: string): Promise<Order | null> {
+    const order = await this.prisma.order.findUnique({
+      where: {
+        id,
+      },
+      include: { items: true },
+    });
+
+    if (!order || order.tenantId !== tenantId) return null;
+
+    return {
+      ...order,
+      customer: order.customer as Record<string, any>,
+      status: order.status as OrderStatus,
+      items: order.items.map((i) => ({
+        id: i.id,
+        sku: i.sku,
+        qty: i.qty,
+      })),
     };
   }
 
@@ -48,7 +76,7 @@ export class OrderPrismaRepository implements IOrderRepository {
       const stockMap = new Map(stockLevels.map((s) => [s.sku, s]));
 
       const stockErrors = [];
-      
+
       // Validation Phase
       for (const item of items) {
         const stock = stockMap.get(item.sku);
@@ -75,24 +103,24 @@ export class OrderPrismaRepository implements IOrderRepository {
         // If validation passed, stock must exist (or we treated missing as 0, which failed validation if qty > 0)
         // If qty was 0, validation passed.
         if (item.qty > 0) {
-             // We can use the version we read earlier.
-             // If version changed, updateMany returns count 0 -> throw -> transaction rollback
-             const { count } = await tx.stockLevel.updateMany({
-               where: {
-                 id: stock!.id,
-                 version: stock!.version,
-                 available: { gte: item.qty }
-               },
-               data: {
-                 available: { decrement: item.qty },
-                 reserved: { increment: item.qty },
-                 version: { increment: 1 }
-               }
-             });
+          // We can use the version we read earlier.
+          // If version changed, updateMany returns count 0 -> throw -> transaction rollback
+          const { count } = await tx.stockLevel.updateMany({
+            where: {
+              id: stock!.id,
+              version: stock!.version,
+              available: { gte: item.qty },
+            },
+            data: {
+              available: { decrement: item.qty },
+              reserved: { increment: item.qty },
+              version: { increment: 1 },
+            },
+          });
 
-             if (count === 0) {
-               throw new Error(`Concurrency conflict for SKU ${item.sku}`);
-             }
+          if (count === 0) {
+            throw new Error(`Concurrency conflict for SKU ${item.sku}`);
+          }
         }
       }
 
@@ -120,7 +148,7 @@ export class OrderPrismaRepository implements IOrderRepository {
       // Prisma Raw for locking the last audit log or a specialized table.
       // For now, we follow the previous logic but inside this transaction.
       // Since it's serializable transaction (or default isolation), it might be enough if isolation level is high.
-      
+
       const lastLog = await tx.auditLog.findFirst({
         where: { tenantId },
         orderBy: { createdAt: 'desc' },
@@ -144,14 +172,14 @@ export class OrderPrismaRepository implements IOrderRepository {
       });
 
       return {
-          ...order,
-          customer: order.customer as any,
-          status: order.status as any,
-          items: order.items.map(i => ({
-            id: i.id,
-            sku: i.sku,
-            qty: i.qty
-          }))
+        ...order,
+        customer: order.customer as Record<string, any>,
+        status: order.status as OrderStatus,
+        items: order.items.map((i) => ({
+          id: i.id,
+          sku: i.sku,
+          qty: i.qty,
+        })),
       };
     });
   }

@@ -9,6 +9,7 @@ export interface CreateOrderTxParams {
 
 export interface IOrderRepository {
   findByExternalId(tenantId: string, externalId: string): Promise<Order | null>;
+  findById(tenantId: string, id: string): Promise<Order | null>;
   create(params: CreateOrderTxParams): Promise<Order>;
 }
 

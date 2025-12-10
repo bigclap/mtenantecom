@@ -15,7 +15,7 @@ export class Order {
   tenantId: string;
   externalId: string;
   status: OrderStatus;
-  customer: any; // Using any for JSON for now
+  customer: Record<string, any>;
   items: OrderItem[];
   createdAt: Date;
   updatedAt: Date;

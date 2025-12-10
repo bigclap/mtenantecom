@@ -15,29 +15,33 @@ export class StockPrismaRepository implements IStockRepository {
 
   async findBySkus(tenantId: string, skus: string[]): Promise<StockLevel[]> {
     return this.prisma.stockLevel.findMany({
-      where: { 
+      where: {
         tenantId,
-        sku: { in: skus }
+        sku: { in: skus },
       },
     });
   }
 
-  async create(tenantId: string, sku: string, initialAvailable: number): Promise<StockLevel> {
-      return this.prisma.stockLevel.create({
-          data: {
-              tenantId,
-              sku,
-              available: initialAvailable,
-              version: 1
-          }
-      })
+  async create(
+    tenantId: string,
+    sku: string,
+    initialAvailable: number,
+  ): Promise<StockLevel> {
+    return this.prisma.stockLevel.create({
+      data: {
+        tenantId,
+        sku,
+        available: initialAvailable,
+        version: 1,
+      },
+    });
   }
 
   async updateStock(
     tenantId: string,
     sku: string,
     currentVersion: number,
-    update: { availableDelta: number; reservedDelta: number }
+    update: { availableDelta: number; reservedDelta: number },
   ): Promise<boolean> {
     const { count } = await this.prisma.stockLevel.updateMany({
       where: {

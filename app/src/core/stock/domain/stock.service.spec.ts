@@ -102,7 +102,8 @@ describe('StockService', () => {
         service.reserveStock('tenant1', [{ sku: 'SKU1', qty: 5 }]),
       ).resolves.not.toThrow();
 
-      expect(repository.updateStock.bind(repository)).toHaveBeenCalledWith(
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(repository.updateStock).toHaveBeenCalledWith(
         'tenant1',
         'SKU1',
         1,
@@ -157,7 +158,8 @@ describe('StockService', () => {
         service.reserveStock('tenant1', [{ sku: 'SKU1', qty: 5 }]),
       ).resolves.not.toThrow();
 
-      expect(repository.updateStock.bind(repository)).toHaveBeenCalledTimes(2);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(repository.updateStock).toHaveBeenCalledTimes(2);
     });
 
     it('should throw after max retries', async () => {
@@ -176,6 +178,7 @@ describe('StockService', () => {
         service.reserveStock('tenant1', [{ sku: 'SKU1', qty: 5 }]),
       ).rejects.toThrow('Concurrency conflict');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(repository.updateStock).toHaveBeenCalled();
     });
   });

@@ -9,6 +9,6 @@ export default defineConfig({
   },
   datasource: {
     // We rely on the environment variable being set (e.g. by Docker or manually in shell)
-    url: env('DATABASE_URL'),
+    url: 'postgresql://postgres:postgres@localhost:5432/mtenantecom?schema=public', //env('DATABASE_URL'),
   },
 });

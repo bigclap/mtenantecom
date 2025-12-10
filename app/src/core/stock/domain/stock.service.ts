@@ -28,10 +28,10 @@ export class StockService {
     items: StockCheckItem[],
   ): Promise<StockAvailabilityError[]> {
     const errors: StockAvailabilityError[] = [];
-    
-    const skus = items.map(i => i.sku);
+
+    const skus = items.map((i) => i.sku);
     const stockLevels = await this.stockRepository.findBySkus(tenantId, skus);
-    const stockMap = new Map(stockLevels.map(s => [s.sku, s]));
+    const stockMap = new Map(stockLevels.map((s) => [s.sku, s]));
 
     for (const item of items) {
       const stock = stockMap.get(item.sku);
@@ -60,31 +60,33 @@ export class StockService {
 
       while (retries > 0) {
         const stock = await this.stockRepository.findBySku(tenantId, item.sku);
-        
+
         const available = stock ? stock.available : 0;
         const currentVersion = stock ? stock.version : 0;
 
         if (available < item.qty) {
-             throw new Error(`Insufficient stock for SKU ${item.sku}. Requested: ${item.qty}, Available: ${available}`);
+          throw new Error(
+            `Insufficient stock for SKU ${item.sku}. Requested: ${item.qty}, Available: ${available}`,
+          );
         }
 
         if (!stock) {
-             throw new Error(`Stock record missing for SKU ${item.sku}`);
+          throw new Error(`Stock record missing for SKU ${item.sku}`);
         }
 
         const updated = await this.stockRepository.updateStock(
-            tenantId, 
-            item.sku, 
-            currentVersion, 
-            {
-                availableDelta: -item.qty,
-                reservedDelta: item.qty
-            }
+          tenantId,
+          item.sku,
+          currentVersion,
+          {
+            availableDelta: -item.qty,
+            reservedDelta: item.qty,
+          },
         );
 
         if (updated) {
-            success = true;
-            break;
+          success = true;
+          break;
         }
 
         retries--;
@@ -92,7 +94,57 @@ export class StockService {
       }
 
       if (!success) {
-        throw new Error(`Concurrency conflict for SKU ${item.sku} after retries`);
+        throw new Error(
+          `Concurrency conflict for SKU ${item.sku} after retries`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Restocks items (e.g. from returns).
+   * Increments 'available'.
+   */
+  async restock(tenantId: string, items: StockCheckItem[]): Promise<void> {
+    for (const item of items) {
+      let retries = 5;
+      let success = false;
+
+      while (retries > 0) {
+        const stock = await this.stockRepository.findBySku(tenantId, item.sku);
+
+        // If stock record doesn't exist, we might want to create it or throw error.
+        // Assuming it exists for now as returns are for sold items.
+        // But if it was deleted, we might need to recreate.
+        // For simplicity, throw if not found.
+        if (!stock) {
+          throw new Error(`Stock record missing for SKU ${item.sku}`);
+        }
+
+        const currentVersion = stock.version;
+
+        const updated = await this.stockRepository.updateStock(
+          tenantId,
+          item.sku,
+          currentVersion,
+          {
+            availableDelta: item.qty,
+            reservedDelta: 0,
+          },
+        );
+
+        if (updated) {
+          success = true;
+          break;
+        }
+
+        retries--;
+      }
+
+      if (!success) {
+        throw new Error(
+          `Concurrency conflict for SKU ${item.sku} during restock`,
+        );
       }
     }
   }
