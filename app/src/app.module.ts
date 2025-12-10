@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ClsModule } from 'nestjs-cls';
 import * as Joi from 'joi';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
@@ -32,6 +33,10 @@ import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
         REDIS_PORT: Joi.number().required(),
         NGINX_PORT: Joi.number().optional(),
       }),
+    }),
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
     }),
     PrismaModule,
     RedisModule,

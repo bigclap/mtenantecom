@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { TenantApiKeysService } from './tenant-api-keys.service';
 
+@Global()
 @Module({
-  providers: [],
-  exports: [],
+  imports: [],
+  providers: [TenantApiKeysService],
+  exports: [TenantApiKeysService],
 })
 export class TenantApiKeysModule {}

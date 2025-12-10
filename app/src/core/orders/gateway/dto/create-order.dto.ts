@@ -3,14 +3,14 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 class CreateOrderItemDto {
-    @ApiProperty()
-    @IsString()
-    @IsNotEmpty()
-    sku: string;
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  sku: string;
 
-    @ApiProperty()
-    @IsNotEmpty()
-    qty: number;
+  @ApiProperty()
+  @IsNotEmpty()
+  qty: number;
 }
 
 export class CreateOrderDto {
