@@ -1,12 +1,40 @@
-import { IsString, IsNotEmpty, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+  Min,
+  IsOptional,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ShopWebhookDto {
+class ShopOrderItemDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  tenantExternalId: string;
+  sku: string;
 
+  @ApiProperty()
+  @IsNumber()
+  @Min(1)
+  qty: number;
+}
+
+class ShopCustomerDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  email?: string;
+}
+
+export class ShopWebhookDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -15,14 +43,16 @@ export class ShopWebhookDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  orderExternalId: string;
+  orderId: string;
 
-  @ApiProperty()
-  @IsObject()
-  payload: Record<string, any>;
+  @ApiProperty({ type: ShopCustomerDto })
+  @ValidateNested()
+  @Type(() => ShopCustomerDto)
+  customer: ShopCustomerDto;
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  signature: string;
+  @ApiProperty({ type: [ShopOrderItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ShopOrderItemDto)
+  items: ShopOrderItemDto[];
 }

@@ -17,4 +17,16 @@ export class TenantApiKeysService {
 
     return apiKey;
   }
+
+  async findByExternalId(externalId: string): Promise<TenantApiKey | null> {
+    const apiKey = await this.prisma.tenantApiKey.findFirst({
+      where: { externalId },
+    });
+
+    if (!apiKey || !apiKey.isActive) {
+      return null;
+    }
+
+    return apiKey;
+  }
 }
