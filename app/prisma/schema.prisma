@@ -1,13 +1,201 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  // url is now in prisma.config.ts
+}
+
+// =========================================================
+// 1. IAM & Tenants
+// =========================================================
+
+model Tenant {
+  // @db.Uuid заставляет PG использовать тип uuid
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apiKeys       TenantApiKey[]
+  orders        Order[]
+  stockLevels   StockLevel[]
+  returns       Return[]
+  auditLogs     AuditLog[]
+  webhookEvents WebhookEvent[]
+
+  @@map("tenants")
+}
+
+model TenantApiKey {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+
+  // API Key обычно 32-64 символа, но дадим запас. Не TEXT.
+  key        String   @unique @db.VarChar(100)
+  secret     String   @db.VarChar(255) // HMAC secret
+  externalId String?  @db.VarChar(255) // ID внешнего магазина
+
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([externalId])
+  @@map("tenant_api_keys")
+}
+
+// =========================================================
+// 2. Order Management
+// =========================================================
+
+// Prisma Enum мапится в нативный CREATE TYPE ... AS ENUM
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  CANCELLED
+}
+
+model Order {
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String      @db.Uuid
+
+  // Внешние ID редко длиннее 100 символов, но 255 - safe bet
+  externalId String      @db.VarChar(255)
+  status     OrderStatus @default(PENDING)
+
+  // JSONB (binary JSON) - стандарт для PG, тут Prisma делает правильно
+  customer   Json        @db.JsonB
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
+  items  OrderItem[]
+  returns Return[]
+
+  @@unique([tenantId, externalId])
+  @@index([tenantId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  orderId  String @db.Uuid
+
+  // SKU - критичное поле для индексов. Ограничим 100 символами.
+  sku      String @db.VarChar(100)
+  qty      Int    // 4 байта (integer). Если нужны дробные - @db.Decimal
+
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  returnItems ReturnItem[]
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// =========================================================
+// 3. Inventory
+// =========================================================
+
+model StockLevel {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  sku       String   @db.VarChar(100)
+
+  available Int      @default(0)
+  reserved  Int      @default(0)
+
+  // Optimistic locking version
+  version   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@map("stock_levels")
+}
+
+// =========================================================
+// 4. Returns
+// =========================================================
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  FAILED
+}
+
+model Return {
+  id        String       @id @default(uuid()) @db.Uuid
+  tenantId  String       @db.Uuid
+  orderId   String       @db.Uuid
+  status    ReturnStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id])
+  order  Order        @relation(fields: [orderId], references: [id])
+  items  ReturnItem[]
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@map("returns")
+}
+
+model ReturnItem {
+  id          String @id @default(uuid()) @db.Uuid
+  tenantId    String @db.Uuid
+  returnId    String @db.Uuid
+  orderItemId String @db.Uuid
+
+  qty         Int
+  reason      String? @db.VarChar(255) // Причина обычно короткая
+
+  return    Return    @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@index([tenantId])
+  @@index([returnId])
+  @@map("return_items")
+}
+
+// =========================================================
+// 5. System
+// =========================================================
+
+model WebhookEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  eventId   String   @db.VarChar(255)
+  payload   Json     @db.JsonB
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, eventId])
+  @@index([tenantId])
+  @@map("webhook_events")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  eventType String   @db.VarChar(50) // Типы событий короткие
+  payload   Json     @db.JsonB
+  createdAt DateTime @default(now())
+
+  // SHA-256 всегда 64 символа в hex. Char быстрее VarChar.
+  prevHash  String?  @db.Char(64)
+  hash      String   @db.Char(64)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("audit_log")
 }
