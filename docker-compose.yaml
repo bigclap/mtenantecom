@@ -6,15 +6,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-#    ports:
-#      - "${POSTGRES_PORT:-5432}:5432"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     restart: always
 
   redis:
@@ -71,7 +72,7 @@ services:
     volumes:
       - ./app:/app
       - /app/node_modules
-    command: npm run start:dev
+    command: sh -c "npx prisma generate && npm run start:dev"
 
 volumes:
   postgres_data:
