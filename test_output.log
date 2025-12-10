@@ -1,0 +1,41 @@
+time="2025-12-10T23:14:14Z" level=warning msg="Found orphan containers ([app-e2e-run-3f0db1a5f4bd app-e2e-run-d40ceabe4d3c app-e2e-run-8dee09f81fd6 app-e2e-run-947a33fc44f2 app-e2e-run-db6981fbfe69 app-e2e-run-ea6494257ed7 app-e2e-run-62708bc8182e app-e2e-run-aeab0447a68d app-e2e-run-a4ccc5d985d7 app-e2e-run-b5704b7afb64 app-e2e-run-1188f4771e88]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container redis  Running
+ Container postgres  Running
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v7.1.0) to ./node_modules/@prisma/client in 217ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+
+> app@0.0.1 test:e2e
+> jest --config ./test/jest-e2e.json
+
+  console.log
+    postgresql://postgres:postgres@postgres:5432/mtenantecom?schema=public
+
+      at new PrismaService (../src/infrastructure/prisma/prisma.service.ts:14:13)
+          at async Promise.all (index 3)
+          at async Promise.all (index 10)
+
+PASS test/app.e2e-spec.ts (6.89 s)
+  App E2E
+    Order Idempotency
+      ✓ should create order and handle duplicate request idempotently (183 ms)
+    Webhook Idempotency
+      ✓ should handle duplicate webhook events (39 ms)
+    Audit Hash Chain
+      ✓ should verify chain is valid (11 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       3 passed, 3 total
+Snapshots:   0 total
+Time:        7.314 s
+Ran all test suites.
+Jest did not exit one second after the test run has completed.
+
+'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.

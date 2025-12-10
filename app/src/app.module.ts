@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ClsModule } from 'nestjs-cls';
 import * as Joi from 'joi';
@@ -11,7 +11,10 @@ import { ReturnsModule } from './core/returns/returns.module';
 import { AuditLogsModule } from './core/audit-logs/audit-logs.module';
 import { WebhookEventsModule } from './core/webhook-events/webhook-events.module';
 import { TenantApiKeysModule } from './core/tenant-api-keys/tenant-api-keys.module';
+import { WebhookModule } from './integrations/webhook/webhook.module';
 import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
+import { LoggerMiddleware } from './infrastructure/logging/logger.middleware';
+import { MetricsModule } from './infrastructure/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -47,9 +50,17 @@ import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
     AuditLogsModule,
     WebhookEventsModule,
     TenantApiKeysModule,
+    WebhookModule,
     ShopBasicModule,
+    MetricsModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggerMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

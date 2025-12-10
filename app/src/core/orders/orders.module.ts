@@ -1,19 +1,14 @@
-import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { OrderQueueService } from './adapters/bull/order-queue.service';
-import { OrderPrismaModule } from './adapters/prisma/order-prisma.module';
-import { OrderService } from './domain/order.service';
-import { OrderController } from './gateway/order.controller';
+import { OrdersService } from './domain/orders.service';
+import { OrdersController } from './gateway/orders.controller';
+import { OrdersShipmentController } from './gateway/orders-shipment.controller';
+import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 @Module({
-  imports: [
-    OrderPrismaModule,
-    BullModule.registerQueue({
-      name: 'orders',
-    }),
-  ],
-  controllers: [OrderController],
-  providers: [OrderService, OrderQueueService],
-  exports: [OrderService],
+  imports: [PrismaModule, AuditLogsModule],
+  controllers: [OrdersController, OrdersShipmentController],
+  providers: [OrdersService],
+  exports: [OrdersService],
 })
 export class OrdersModule {}

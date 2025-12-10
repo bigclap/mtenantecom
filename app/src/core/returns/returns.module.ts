@@ -1,34 +1,20 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
-import { ReturnController } from './gateway/return.controller';
-import { ReturnService } from './domain/return.service';
-import { ReturnQueueService } from './adapters/bull/return-queue.service';
-import { ReturnProcessor } from './adapters/bull/return.processor';
-import { ReturnPrismaRepository } from './adapters/prisma/return.repository';
-import { IReturnRepository } from './domain/return.repository.interface';
+import { ReturnsService } from './domain/returns.service';
+import { ReturnsController } from './gateway/returns.controller';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
-import { OrderPrismaModule } from '../orders/adapters/prisma/order-prisma.module';
+import { BullModule } from '@nestjs/bullmq';
+import { ReturnsProcessor } from './domain/returns.processor';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuditLogsModule,
-    OrderPrismaModule,
     BullModule.registerQueue({
-      name: 'returns',
+      name: 'returns.process',
     }),
   ],
-  controllers: [ReturnController],
-  providers: [
-    ReturnService,
-    ReturnQueueService,
-    ReturnProcessor,
-    {
-      provide: IReturnRepository,
-      useClass: ReturnPrismaRepository,
-    },
-  ],
-  exports: [ReturnService],
+  controllers: [ReturnsController],
+  providers: [ReturnsService, ReturnsProcessor],
 })
 export class ReturnsModule {}

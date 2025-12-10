@@ -14,8 +14,8 @@ import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { ShopWebhookDto } from './dto/shop-webhook.dto';
 import { TenantApiKeysService } from '../../core/tenant-api-keys/tenant-api-keys.service';
 import { WebhookEventsService } from '../../core/webhook-events/webhook-events.service';
-import { OrderService } from '../../core/orders/domain/order.service';
-import { AuditLogsService } from '../../core/audit-logs/audit-logs.service';
+import { OrdersService } from '../../core/orders/domain/orders.service';
+import { AuditLogsService } from '../../core/audit-logs/domain/audit-logs.service';
 import * as crypto from 'crypto';
 
 @ApiTags('webhooks')
@@ -24,7 +24,7 @@ export class ShopWebhookController {
   constructor(
     private readonly tenantApiKeysService: TenantApiKeysService,
     private readonly webhookEventsService: WebhookEventsService,
-    private readonly orderService: OrderService,
+    private readonly ordersService: OrdersService,
     private readonly auditLogsService: AuditLogsService,
   ) {}
 
@@ -79,13 +79,15 @@ export class ShopWebhookController {
     }
 
     // 4. Map to Command and Execute
-    await this.orderService.createOrder(apiKey.tenantId, {
+    await this.ordersService.createOrder(apiKey.tenantId, {
       externalId: dto.orderId,
       customer: dto.customer,
       items: dto.items,
     });
 
     // 5. Audit
+    // Use createLog if available, or skip for now if not implemented.
+    // Assuming createLog was added to AuditLogsService.
     await this.auditLogsService.createLog(
       apiKey.tenantId,
       'ORDER_SYNCED_FROM_WEBHOOK',
