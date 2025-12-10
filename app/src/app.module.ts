@@ -1,17 +1,16 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
-import { BullModule } from '@nestjs/bullmq';
-import { PrismaModule } from './prisma/prisma.module';
-import { TenantsModule } from './tenants/tenants.module';
-import { TenantApiKeysModule } from './tenant-api-keys/tenant-api-keys.module';
-import { OrdersModule } from './orders/orders.module';
-import { OrderItemsModule } from './order-items/order-items.module';
-import { StockLevelsModule } from './stock-levels/stock-levels.module';
-import { ReturnsModule } from './returns/returns.module';
-import { ReturnItemsModule } from './return-items/return-items.module';
-import { WebhookEventsModule } from './webhook-events/webhook-events.module';
-import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { RedisModule } from './infrastructure/redis/redis.module';
+import { OrdersModule } from './core/orders/orders.module';
+import { StockModule } from './core/stock/stock.module';
+import { TenantsModule } from './core/tenants/tenants.module';
+import { ReturnsModule } from './core/returns/returns.module';
+import { AuditLogsModule } from './core/audit-logs/audit-logs.module';
+import { WebhookEventsModule } from './core/webhook-events/webhook-events.module';
+import { TenantApiKeysModule } from './core/tenant-api-keys/tenant-api-keys.module';
+import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
 
 @Module({
   imports: [
@@ -35,25 +34,15 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
       }),
     }),
     PrismaModule,
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        connection: {
-          host: configService.get('REDIS_HOST'),
-          port: configService.get('REDIS_PORT'),
-        },
-      }),
-      inject: [ConfigService],
-    }),
-    TenantsModule,
-    TenantApiKeysModule,
+    RedisModule,
     OrdersModule,
-    OrderItemsModule,
-    StockLevelsModule,
+    StockModule,
+    TenantsModule,
     ReturnsModule,
-    ReturnItemsModule,
-    WebhookEventsModule,
     AuditLogsModule,
+    WebhookEventsModule,
+    TenantApiKeysModule,
+    ShopBasicModule,
   ],
   controllers: [],
   providers: [],
