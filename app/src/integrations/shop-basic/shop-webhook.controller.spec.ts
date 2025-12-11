@@ -118,7 +118,7 @@ describe('ShopWebhookController', () => {
     );
 
     expect(result).toEqual({ status: 'processed' });
-    expect(orderService.createOrder.bind(orderService)).toHaveBeenCalledWith(
+    expect(orderService.createOrder).toHaveBeenCalledWith(
       tenantId,
       expect.objectContaining({
         externalId: dto.orderId,
@@ -126,7 +126,7 @@ describe('ShopWebhookController', () => {
     );
 
     expect(
-      auditLogsService.createLog.bind(auditLogsService),
+      auditLogsService.createLog,
     ).toHaveBeenCalledWith(
       tenantId,
       'ORDER_SYNCED_FROM_WEBHOOK',
@@ -171,6 +171,6 @@ describe('ShopWebhookController', () => {
     );
 
     expect(result).toEqual({ status: 'ignored', reason: 'duplicate' });
-    expect(orderService.createOrder.bind(orderService)).not.toHaveBeenCalled();
+    expect(orderService.createOrder).not.toHaveBeenCalled();
   });
 });

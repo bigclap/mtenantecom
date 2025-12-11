@@ -1,9 +1,16 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { CreateOrderDto } from '../gateway/dto/create-order.dto';
 import { Order } from './order.entity';
 import { IOrderRepository } from './order.repository.interface';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { StockService } from '../../stock/domain/stock.service';
+import { MetricsService } from '../../../infrastructure/metrics/metrics.service';
 
 @Injectable()
 export class OrderService {
@@ -12,6 +19,8 @@ export class OrderService {
     private readonly orderRepository: IOrderRepository,
     private readonly auditLogsService: AuditLogsService,
     private readonly prisma: PrismaService,
+    private readonly stockService: StockService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   async createOrder(tenantId: string, dto: CreateOrderDto): Promise<Order> {
@@ -31,9 +40,33 @@ export class OrderService {
       }
     }
 
-    // 2. Create Transaction (delegated to repository)
+    // 2. Check Stock Availability
+    const stockErrors = await this.stockService.checkStockAvailability(
+      tenantId,
+      dto.items,
+    );
+
+    if (stockErrors.length > 0) {
+      throw new UnprocessableEntityException({
+        message: 'Insufficient stock',
+        errors: stockErrors,
+      });
+    }
+
+    // 3. Create Transaction (delegated to repository)
     // We start the transaction here to include Audit Log in the same transaction unit
-    return this.prisma.$transaction(async (tx) => {
+    const createdOrder = await this.prisma.$transaction(async (tx) => {
+      // 3.1 Reserve Stock
+      for (const item of dto.items) {
+        await tx.stockLevel.updateMany({
+          where: { tenantId, sku: item.sku },
+          data: {
+            available: { decrement: item.qty },
+            reserved: { increment: item.qty },
+          },
+        });
+      }
+
       const order = await this.orderRepository.create(
         {
           tenantId,
@@ -44,7 +77,7 @@ export class OrderService {
         tx,
       );
 
-      // 3. Audit Log
+      // 4. Audit Log
       await this.auditLogsService.createLog(
         tenantId,
         'ORDER_CREATED',
@@ -58,6 +91,9 @@ export class OrderService {
 
       return order;
     });
+
+    this.metricsService.ordersCreatedTotal.inc();
+    return createdOrder;
   }
 
   async shipOrder(tenantId: string, orderId: string): Promise<Order> {
