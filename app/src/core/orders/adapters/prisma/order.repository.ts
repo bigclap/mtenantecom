@@ -155,35 +155,26 @@ export class OrderPrismaRepository implements IOrderRepository {
     return this.prisma.$transaction(executeLogic);
   }
 
-  async updateStatus(tenantId: string, orderId: string, status: OrderStatus, externalTx?: Prisma.TransactionClient): Promise<Order> {
+  async updateStatus(tenantId: string, orderId: string, status: string, externalTx?: Prisma.TransactionClient): Promise<Order> {
     const executeLogic = async (tx: Prisma.TransactionClient) => {
         return tx.order.update({
             where: { id: orderId },
-            data: { status },
+            data: { status: status as any },
             include: { items: true },
         });
     };
-    
+
+    let order;
     if (externalTx) {
-        const order = await executeLogic(externalTx);
-         return {
-            ...order,
-            customer: order.customer as Record<string, any>,
-            status: order.status as OrderStatus,
-            items: order.items.map((i) => ({
-                id: i.id,
-                sku: i.sku,
-                qty: i.qty,
-            })),
-        };
+        order = await executeLogic(externalTx);
+    } else {
+        order = await this.prisma.order.update({
+            where: { id: orderId },
+            data: { status: status as any },
+            include: { items: true },
+        });
     }
-    
-    const order = await this.prisma.order.update({
-        where: { id: orderId },
-        data: { status },
-        include: { items: true },
-    });
-    
+
     return {
         ...order,
         customer: order.customer as Record<string, any>,

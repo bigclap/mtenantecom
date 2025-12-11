@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/infrastructure/prisma/prisma.service';
 import { TenantApiKeysService } from './../src/core/tenant-api-keys/tenant-api-keys.service';
+import { AuditLogsService } from './../src/core/audit-logs/audit-logs.service';
 
 describe('AuditController (e2e)', () => {
   let app: INestApplication;
@@ -51,7 +52,7 @@ describe('AuditController (e2e)', () => {
 
   it('/audit/verify (GET) - valid chain after events', async () => {
     // Manually insert some logs
-    const auditService = app.get('AuditLogsService'); // Access via token or class
+    const auditService = app.get(AuditLogsService); // Access via class
 
     // We can use the service to create logs to ensure the chain is correct
     await auditService.createLog(tenantId, 'EVENT_1', { data: 1 });
@@ -67,7 +68,7 @@ describe('AuditController (e2e)', () => {
   it('/audit/verify (GET) - broken chain', async () => {
     // 1. Create a valid log
 
-    const auditService = app.get('AuditLogsService');
+    const auditService = app.get(AuditLogsService);
     await auditService.createLog(tenantId, 'EVENT_3', { data: 3 });
 
     // 2. Tamper with the log in DB

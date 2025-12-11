@@ -13,6 +13,8 @@ import { WebhookEventsModule } from './core/webhook-events/webhook-events.module
 import { TenantApiKeysModule } from './core/tenant-api-keys/tenant-api-keys.module';
 import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
 import { AuditLoggerMiddleware } from './infrastructure/middleware/audit-logger.middleware';
+import { HttpLoggingMiddleware } from './infrastructure/logging/http-logging.middleware';
+import { MetricsController } from './infrastructure/metrics/metrics.controller';
 
 @Module({
   imports: [
@@ -50,11 +52,12 @@ import { AuditLoggerMiddleware } from './infrastructure/middleware/audit-logger.
     TenantApiKeysModule,
     ShopBasicModule,
   ],
-  controllers: [],
+  controllers: [MetricsController],
   providers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply(HttpLoggingMiddleware).forRoutes('*');
     consumer.apply(AuditLoggerMiddleware).forRoutes('*');
   }
 }

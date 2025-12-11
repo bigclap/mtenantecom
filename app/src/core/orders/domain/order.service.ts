@@ -63,32 +63,41 @@ export class OrderService {
   async shipOrder(tenantId: string, orderId: string): Promise<Order> {
     const order = await this.orderRepository.findById(tenantId, orderId);
     if (!order) {
-        throw new ConflictException('Order not found'); // Or NotFound, but task says Conflict for invalid state
+      throw new ConflictException('Order not found');
     }
-    
+
     if (order.status !== 'PENDING') {
-        throw new ConflictException(`Cannot ship order in status ${order.status}`);
+      throw new ConflictException(
+        `Cannot ship order in status ${order.status}`,
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
-        // 1. Update Status
-        const updatedOrder = await this.orderRepository.updateStatus(tenantId, orderId, 'SHIPPED', tx);
+      // 1. Update Status
+      const updatedOrder = await this.orderRepository.updateStatus(
+        tenantId,
+        orderId,
+        'SHIPPED',
+        tx,
+      );
 
-        // 2. Adjust Stock (Reserved -> 0)
-        // Task says: "корректируем сток (опционально: уменьшаем reserved, либо ведём отдельный учёт)"
-        // Since we decremented available on create, and incremented reserved.
-        // Now we should decrement reserved.
-        for (const item of order.items) {
-             await tx.stockLevel.updateMany({
-                where: { tenantId, sku: item.sku },
-                data: { reserved: { decrement: item.qty } }
-             });
-        }
+      // 2. Adjust Stock (Reserved -> 0)
+      for (const item of order.items) {
+        await tx.stockLevel.updateMany({
+          where: { tenantId, sku: item.sku },
+          data: { reserved: { decrement: item.qty } },
+        });
+      }
 
-        // 3. Audit Log
-        await this.auditLogsService.createLog(tenantId, 'ORDER_SHIPPED', { orderId }, tx);
+      // 3. Audit Log
+      await this.auditLogsService.createLog(
+        tenantId,
+        'ORDER_SHIPPED',
+        { orderId },
+        tx,
+      );
 
-        return updatedOrder;
+      return updatedOrder;
     });
   }
 
