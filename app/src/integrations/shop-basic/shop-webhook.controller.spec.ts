@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ShopWebhookController } from './shop-webhook.controller';
 import { TenantApiKeysService } from '../../core/tenant-api-keys/tenant-api-keys.service';
@@ -11,8 +12,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { TenantApiKey, AuditLog } from '@prisma/client';
+import { TenantApiKey } from '@prisma/client';
 import { Order, OrderStatus } from '../../core/orders/domain/order.entity';
+import { AuditLog } from '../../core/audit-logs/domain/audit-log.entity';
+import { MetricsService } from '../../infrastructure/metrics/metrics.service';
 
 describe('ShopWebhookController', () => {
   let controller: ShopWebhookController;
@@ -47,6 +50,12 @@ describe('ShopWebhookController', () => {
           provide: AuditLogsService,
           useValue: {
             createLog: jest.fn(),
+          },
+        },
+        {
+          provide: MetricsService,
+          useValue: {
+            webhookErrorsTotal: { inc: jest.fn() },
           },
         },
       ],
@@ -118,16 +127,14 @@ describe('ShopWebhookController', () => {
     );
 
     expect(result).toEqual({ status: 'processed' });
-    expect(orderService.createOrder.bind(orderService)).toHaveBeenCalledWith(
+    expect(orderService.createOrder).toHaveBeenCalledWith(
       tenantId,
       expect.objectContaining({
         externalId: dto.orderId,
       }),
     );
 
-    expect(
-      auditLogsService.createLog.bind(auditLogsService),
-    ).toHaveBeenCalledWith(
+    expect(auditLogsService.createLog).toHaveBeenCalledWith(
       tenantId,
       'ORDER_SYNCED_FROM_WEBHOOK',
       expect.anything(),
@@ -171,6 +178,6 @@ describe('ShopWebhookController', () => {
     );
 
     expect(result).toEqual({ status: 'ignored', reason: 'duplicate' });
-    expect(orderService.createOrder.bind(orderService)).not.toHaveBeenCalled();
+    expect(orderService.createOrder).not.toHaveBeenCalled();
   });
 });

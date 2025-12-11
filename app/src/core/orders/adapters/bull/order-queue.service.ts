@@ -6,7 +6,7 @@ import { Queue } from 'bullmq';
 export class OrderQueueService {
   constructor(@InjectQueue('orders') private orderQueue: Queue) {}
 
-  async addOrderJob(data: any) {
+  async addOrderJob(data: unknown) {
     await this.orderQueue.add('process-order', data);
   }
 }

@@ -11,9 +11,9 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
   async create(
     tenantId: string,
     eventType: string,
-    payload: any,
+    payload: Record<string, unknown>,
     hashFn: (prevHash: string | null) => string,
-    externalTx?: Prisma.TransactionClient,
+    externalTx?: unknown,
   ): Promise<AuditLog> {
     const executeLogic = async (tx: Prisma.TransactionClient) => {
       // ARCH: Pessimistic Locking.
@@ -43,7 +43,7 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
         created.id,
         created.tenantId,
         created.eventType,
-        created.payload,
+        created.payload as Record<string, unknown>,
         created.hash,
         created.prevHash,
         created.createdAt,
@@ -51,7 +51,7 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
     };
 
     if (externalTx) {
-      return executeLogic(externalTx);
+      return executeLogic(externalTx as Prisma.TransactionClient);
     }
 
     return this.prisma.$transaction(executeLogic);
@@ -69,7 +69,7 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
           log.id,
           log.tenantId,
           log.eventType,
-          log.payload,
+          log.payload as Record<string, unknown>,
           log.hash,
           log.prevHash,
           log.createdAt,

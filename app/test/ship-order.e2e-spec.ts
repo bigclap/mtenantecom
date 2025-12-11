@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/infrastructure/prisma/prisma.service';
 import { TenantApiKeysService } from './../src/core/tenant-api-keys/tenant-api-keys.service';
@@ -63,13 +64,14 @@ describe('OrderController - Ship Order (e2e)', () => {
       items: [{ sku: 'SKU-SHIP-1', qty: 2 }],
     };
 
-    const createRes = await request(app.getHttpServer())
+    const createRes = await request(app.getHttpServer() as App)
       .post('/orders')
       .set('x-api-key', apiKey)
       .send(createOrderDto)
       .expect(201);
 
-    const orderId = createRes.body.id;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const orderId = createRes.body.id as string;
 
     // Verify stock reserved
     let stock = await prisma.stockLevel.findUnique({
@@ -79,7 +81,7 @@ describe('OrderController - Ship Order (e2e)', () => {
     expect(stock!.reserved).toBe(2);
 
     // 3. Ship Order
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/orders/${orderId}/ship`)
       .set('x-api-key', apiKey)
       .expect(201); // NestJS default for POST is 201
@@ -100,6 +102,7 @@ describe('OrderController - Ship Order (e2e)', () => {
       where: { tenantId, eventType: 'ORDER_SHIPPED' },
     });
     expect(log).toBeDefined();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect((log!.payload as any).orderId).toBe(orderId);
   });
 
@@ -121,13 +124,14 @@ describe('OrderController - Ship Order (e2e)', () => {
       items: [{ sku: 'SKU-SHIP-2', qty: 2 }],
     };
 
-    const createRes = await request(app.getHttpServer())
+    const createRes = await request(app.getHttpServer() as App)
       .post('/orders')
       .set('x-api-key', apiKey)
       .send(createOrderDto)
       .expect(201);
 
-    const orderId = createRes.body.id;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const orderId = createRes.body.id as string;
 
     // Manually set to SHIPPED
     await prisma.order.update({
@@ -136,7 +140,7 @@ describe('OrderController - Ship Order (e2e)', () => {
     });
 
     // 3. Try to Ship
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/orders/${orderId}/ship`)
       .set('x-api-key', apiKey)
       .expect(409);

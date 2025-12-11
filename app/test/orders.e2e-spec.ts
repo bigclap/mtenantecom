@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/infrastructure/prisma/prisma.service';
 import { TenantApiKeysService } from './../src/core/tenant-api-keys/tenant-api-keys.service';
@@ -65,12 +66,13 @@ describe('OrderController (e2e)', () => {
       },
     });
 
-    return request(app.getHttpServer())
+    return request(app.getHttpServer() as App)
       .post('/orders')
       .set('x-api-key', apiKey)
       .send(createOrderDto)
       .expect(201)
       .expect((res) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(res.body.externalId).toBe('ord-001');
       });
   });
@@ -95,19 +97,20 @@ describe('OrderController (e2e)', () => {
     });
 
     // First request
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/orders')
       .set('x-api-key', apiKey)
       .send(createOrderDto)
       .expect(201);
 
     // Second request with same externalId
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/orders')
       .set('x-api-key', apiKey)
       .send(createOrderDto)
       .expect(201) // Expect 201 (success) but it should be the same order
       .expect((res) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(res.body.externalId).toBe('ord-002');
       });
   });

@@ -5,7 +5,6 @@ import {
   CreateOrderTxParams,
 } from '../../domain/order.repository.interface';
 import { Order, OrderStatus } from '../../domain/order.entity';
-import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -30,7 +29,7 @@ export class OrderPrismaRepository implements IOrderRepository {
 
     return {
       ...order,
-      customer: order.customer as Record<string, any>,
+      customer: order.customer as Record<string, unknown>,
       status: order.status as OrderStatus,
       items: order.items.map((i) => ({
         id: i.id,
@@ -52,7 +51,7 @@ export class OrderPrismaRepository implements IOrderRepository {
 
     return {
       ...order,
-      customer: order.customer as Record<string, any>,
+      customer: order.customer as Record<string, unknown>,
       status: order.status as OrderStatus,
       items: order.items.map((i) => ({
         id: i.id,
@@ -141,7 +140,7 @@ export class OrderPrismaRepository implements IOrderRepository {
 
       return {
         ...order,
-        customer: order.customer as Record<string, any>,
+        customer: order.customer as Record<string, unknown>,
         status: order.status as OrderStatus,
         items: order.items.map((i) => ({
           id: i.id,
@@ -167,7 +166,7 @@ export class OrderPrismaRepository implements IOrderRepository {
     const executeLogic = async (tx: Prisma.TransactionClient) => {
       return tx.order.update({
         where: { id: orderId },
-        data: { status: status as any },
+        data: { status: status as import('@prisma/client').OrderStatus },
         include: { items: true },
       });
     };
@@ -178,14 +177,14 @@ export class OrderPrismaRepository implements IOrderRepository {
     } else {
       order = await this.prisma.order.update({
         where: { id: orderId },
-        data: { status: status as any },
+        data: { status: status as import('@prisma/client').OrderStatus },
         include: { items: true },
       });
     }
 
     return {
       ...order,
-      customer: order.customer as Record<string, any>,
+      customer: order.customer as Record<string, unknown>,
       status: order.status as OrderStatus,
       items: order.items.map((i) => ({
         id: i.id,

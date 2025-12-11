@@ -14,7 +14,7 @@ export class WebhookEventsService {
   async saveEvent(
     tenantId: string,
     eventId: string,
-    payload: any,
+    payload: unknown,
   ): Promise<boolean> {
     try {
       await this.prisma.webhookEvent.create({

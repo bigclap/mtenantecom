@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateOrderDto } from '../gateway/dto/create-order.dto';
@@ -13,9 +14,7 @@ describe('OrderService', () => {
   let service: OrderService;
   let repository: jest.Mocked<IOrderRepository>;
   let stockService: jest.Mocked<StockService>;
-  let prismaService: jest.Mocked<PrismaService>;
   let metricsService: jest.Mocked<MetricsService>;
-  let auditLogsService: jest.Mocked<AuditLogsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -38,6 +37,7 @@ describe('OrderService', () => {
           provide: PrismaService,
           useValue: {
             $transaction: jest.fn((cb) =>
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
               cb({ stockLevel: { updateMany: jest.fn() } }),
             ),
           },
@@ -60,9 +60,7 @@ describe('OrderService', () => {
     service = module.get<OrderService>(OrderService);
     repository = module.get(IOrderRepository);
     stockService = module.get(StockService);
-    prismaService = module.get(PrismaService);
     metricsService = module.get(MetricsService);
-    auditLogsService = module.get(AuditLogsService);
   });
 
   it('should be defined', () => {

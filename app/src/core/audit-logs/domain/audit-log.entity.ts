@@ -3,7 +3,7 @@ export class AuditLog {
     public readonly id: string,
     public readonly tenantId: string,
     public readonly eventType: string,
-    public readonly payload: any,
+    public readonly payload: Record<string, unknown>,
     public readonly hash: string,
     public readonly prevHash: string | null,
     public readonly createdAt: Date,

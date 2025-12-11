@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/infrastructure/prisma/prisma.service';
 import { TenantApiKeysService } from './../src/core/tenant-api-keys/tenant-api-keys.service';
@@ -78,7 +79,7 @@ describe('ShopWebhookController (e2e)', () => {
       .update(JSON.stringify(dto))
       .digest('hex');
 
-    return request(app.getHttpServer())
+    return request(app.getHttpServer() as App)
       .post(`/webhooks/shop/${tenantExternalId}/order-updated`)
       .set('x-shop-signature', signature)
       .send(dto)
@@ -112,7 +113,7 @@ describe('ShopWebhookController (e2e)', () => {
       .digest('hex');
 
     // First request
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/webhooks/shop/${tenantExternalId}/order-updated`)
       .set('x-shop-signature', signature)
       .send(dto)
@@ -120,7 +121,7 @@ describe('ShopWebhookController (e2e)', () => {
       .expect({ status: 'processed' });
 
     // Second request
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/webhooks/shop/${tenantExternalId}/order-updated`)
       .set('x-shop-signature', signature)
       .send(dto)
@@ -138,7 +139,7 @@ describe('ShopWebhookController (e2e)', () => {
 
     const signature = 'invalid-signature';
 
-    return request(app.getHttpServer())
+    return request(app.getHttpServer() as App)
       .post(`/webhooks/shop/${tenantExternalId}/order-updated`)
       .set('x-shop-signature', signature)
       .send(dto)

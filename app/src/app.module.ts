@@ -1,20 +1,20 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ClsModule } from 'nestjs-cls';
 import * as Joi from 'joi';
+import { ClsModule } from 'nestjs-cls';
+import { AuditLogsModule } from './core/audit-logs/audit-logs.module';
+import { OrdersModule } from './core/orders/orders.module';
+import { ReturnsModule } from './core/returns/returns.module';
+import { StockModule } from './core/stock/stock.module';
+import { TenantApiKeysModule } from './core/tenant-api-keys/tenant-api-keys.module';
+import { TenantsModule } from './core/tenants/tenants.module';
+import { WebhookEventsModule } from './core/webhook-events/webhook-events.module';
+import { HttpLoggingMiddleware } from './infrastructure/logging/http-logging.middleware';
+import { MetricsModule } from './infrastructure/metrics/metrics.module';
+import { AuditLoggerMiddleware } from './infrastructure/middleware/audit-logger.middleware';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
-import { OrdersModule } from './core/orders/orders.module';
-import { StockModule } from './core/stock/stock.module';
-import { TenantsModule } from './core/tenants/tenants.module';
-import { ReturnsModule } from './core/returns/returns.module';
-import { AuditLogsModule } from './core/audit-logs/audit-logs.module';
-import { WebhookEventsModule } from './core/webhook-events/webhook-events.module';
-import { TenantApiKeysModule } from './core/tenant-api-keys/tenant-api-keys.module';
 import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
-import { AuditLoggerMiddleware } from './infrastructure/middleware/audit-logger.middleware';
-import { HttpLoggingMiddleware } from './infrastructure/logging/http-logging.middleware';
-import { MetricsController } from './infrastructure/metrics/metrics.controller';
 
 @Module({
   imports: [
@@ -43,6 +43,7 @@ import { MetricsController } from './infrastructure/metrics/metrics.controller';
     }),
     PrismaModule,
     RedisModule,
+    MetricsModule,
     OrdersModule,
     StockModule,
     TenantsModule,
@@ -52,7 +53,7 @@ import { MetricsController } from './infrastructure/metrics/metrics.controller';
     TenantApiKeysModule,
     ShopBasicModule,
   ],
-  controllers: [MetricsController],
+  controllers: [],
   providers: [],
 })
 export class AppModule implements NestModule {

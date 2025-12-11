@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/infrastructure/prisma/prisma.service';
 import { TenantApiKeysService } from './../src/core/tenant-api-keys/tenant-api-keys.service';
@@ -43,7 +44,7 @@ describe('AuditController (e2e)', () => {
   });
 
   it('/audit/verify (GET) - empty chain', () => {
-    return request(app.getHttpServer())
+    return request(app.getHttpServer() as App)
       .get('/audit/verify')
       .set('x-api-key', apiKey)
       .expect(200)
@@ -58,7 +59,7 @@ describe('AuditController (e2e)', () => {
     await auditService.createLog(tenantId, 'EVENT_1', { data: 1 });
     await auditService.createLog(tenantId, 'EVENT_2', { data: 2 });
 
-    return request(app.getHttpServer())
+    return request(app.getHttpServer() as App)
       .get('/audit/verify')
       .set('x-api-key', apiKey)
       .expect(200)
@@ -86,11 +87,12 @@ describe('AuditController (e2e)', () => {
       data: { payload: { data: 'TAMPERED' } }, // Hash will now match payload
     });
 
-    return request(app.getHttpServer())
+    return request(app.getHttpServer() as App)
       .get('/audit/verify')
       .set('x-api-key', apiKey)
       .expect(200)
       .expect((res) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(res.body.status).toBe('broken');
       });
   });

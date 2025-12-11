@@ -5,7 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { CreateOrderDto } from '../gateway/dto/create-order.dto';
-import { Order } from './order.entity';
+import { Order, OrderStatus } from './order.entity';
 import { IOrderRepository } from './order.repository.interface';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
@@ -56,17 +56,6 @@ export class OrderService {
     // 3. Create Transaction (delegated to repository)
     // We start the transaction here to include Audit Log in the same transaction unit
     const createdOrder = await this.prisma.$transaction(async (tx) => {
-      // 3.1 Reserve Stock
-      for (const item of dto.items) {
-        await tx.stockLevel.updateMany({
-          where: { tenantId, sku: item.sku },
-          data: {
-            available: { decrement: item.qty },
-            reserved: { increment: item.qty },
-          },
-        });
-      }
-
       const order = await this.orderRepository.create(
         {
           tenantId,
@@ -102,9 +91,9 @@ export class OrderService {
       throw new ConflictException('Order not found');
     }
 
-    if (order.status !== 'PENDING') {
+    if (order.status !== OrderStatus.PENDING) {
       throw new ConflictException(
-        `Cannot ship order in status ${order.status}`,
+        `Cannot ship order in status ${String(order.status)}`,
       );
     }
 

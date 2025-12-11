@@ -21,7 +21,7 @@ export class AuditController {
   })
   @ApiResponse({ status: 200, description: 'Verification result' })
   async verify() {
-    const tenantId = this.cls.get('tenantId');
+    const tenantId = this.cls.get<string>('tenantId');
     return this.auditService.verifyChain(tenantId);
   }
 }

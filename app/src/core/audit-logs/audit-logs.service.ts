@@ -13,7 +13,7 @@ export class AuditLogsService {
     private readonly repository: IAuditLogRepository,
   ) {}
 
-  private stableStringify(obj: any): string {
+  private stableStringify(obj: unknown): string {
     if (typeof obj !== 'object' || obj === null) {
       return JSON.stringify(obj);
     }
@@ -22,7 +22,7 @@ export class AuditLogsService {
         '[' + obj.map((item) => this.stableStringify(item)).join(',') + ']'
       );
     }
-    const typedObj = obj as Record<string, any>;
+    const typedObj = obj as Record<string, unknown>;
     const keys = Object.keys(typedObj).sort();
     const parts = keys.map(
       (key) => JSON.stringify(key) + ':' + this.stableStringify(typedObj[key]),
@@ -30,7 +30,7 @@ export class AuditLogsService {
     return '{' + parts.join(',') + '}';
   }
 
-  private calculateHash(prevHash: string | null, data: any): string {
+  private calculateHash(prevHash: string | null, data: unknown): string {
     // Genesis hash convention: '0'.repeat(64) if prevHash is null
     const prev = prevHash || '0'.repeat(64);
     const dataString = this.stableStringify(data);
@@ -41,8 +41,8 @@ export class AuditLogsService {
   async recordLog(
     tenantId: string,
     eventType: string,
-    payload: any,
-    tx?: any,
+    payload: Record<string, unknown>,
+    tx?: unknown,
   ): Promise<AuditLog> {
     return this.repository.create(
       tenantId,
@@ -63,8 +63,8 @@ export class AuditLogsService {
   async createLog(
     tenantId: string,
     eventType: string,
-    payload: any,
-    tx?: any,
+    payload: Record<string, unknown>,
+    tx?: unknown,
   ): Promise<AuditLog> {
     return this.recordLog(tenantId, eventType, payload, tx);
   }

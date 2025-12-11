@@ -3,19 +3,19 @@ import { Order } from './order.entity';
 export interface CreateOrderTxParams {
   tenantId: string;
   externalId: string;
-  customer: any;
+  customer: unknown;
   items: { sku: string; qty: number }[];
 }
 
 export interface IOrderRepository {
   findByExternalId(tenantId: string, externalId: string): Promise<Order | null>;
   findById(tenantId: string, id: string): Promise<Order | null>;
-  create(params: CreateOrderTxParams, tx?: any): Promise<Order>;
+  create(params: CreateOrderTxParams, tx?: unknown): Promise<Order>;
   updateStatus(
     tenantId: string,
     orderId: string,
     status: string,
-    tx?: any,
+    tx?: unknown,
   ): Promise<Order>;
 }
 

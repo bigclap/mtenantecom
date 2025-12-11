@@ -6,9 +6,9 @@ export interface IAuditLogRepository {
   create(
     tenantId: string,
     eventType: string,
-    payload: any,
+    payload: Record<string, unknown>,
     hashFn: (prevHash: string | null) => string,
-    tx?: any, // Should be Prisma.TransactionClient but we use any to avoid direct coupling
+    tx?: unknown, // Should be Prisma.TransactionClient but we use unknown to avoid direct coupling
   ): Promise<AuditLog>;
 
   findByTenantId(tenantId: string): Promise<AuditLog[]>;

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/infrastructure/prisma/prisma.service';
 import { TenantApiKeysService } from './../src/core/tenant-api-keys/tenant-api-keys.service';
@@ -13,7 +14,7 @@ describe('ReturnController (e2e)', () => {
   let tenantId: string;
   let apiKey: string;
   let orderId: string;
-  let orderItemId: string;
+  // let orderItemId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -54,7 +55,7 @@ describe('ReturnController (e2e)', () => {
       include: { items: true },
     });
     orderId = order.id;
-    orderItemId = order.items[0].id;
+    // orderItemId = order.items[0].id;
   });
 
   afterAll(async () => {
@@ -83,12 +84,13 @@ describe('ReturnController (e2e)', () => {
       items: [{ sku: 'SKU-RET-1', qty: 2, reason: 'Broken' }],
     };
 
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .post('/returns')
       .set('x-api-key', apiKey)
       .send(createReturnDto)
       .expect(201);
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(res.body.status).toBe('PENDING');
 
     // Wait for async processing (BullMQ)
@@ -99,6 +101,7 @@ describe('ReturnController (e2e)', () => {
     let found = false;
     for (let i = 0; i < maxRetries; i++) {
       const ret = await prisma.return.findUnique({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         where: { id: res.body.id },
       });
       if (ret && ret.status === 'APPROVED') {

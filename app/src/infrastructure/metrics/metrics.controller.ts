@@ -17,12 +17,13 @@ export class MetricsController {
       webhookErrorsTotal,
       returnsFailedTotal,
       returnsQueueSize,
-    ] = [
+    ] = await Promise.all([
       this.metricsService.ordersCreatedTotal.get(),
       this.metricsService.webhookErrorsTotal.get(),
       this.metricsService.returnsFailedTotal.get(),
       this.metricsService.returnsQueueSize.get(),
-    ];
+    ]);
+
     return {
       status: 'up',
       uptime: process.uptime(),

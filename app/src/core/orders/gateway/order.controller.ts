@@ -21,7 +21,7 @@ export class OrderController {
   @ApiResponse({ status: 422, description: 'Insufficient stock' })
   async create(@Body() dto: CreateOrderDto) {
     // TenantId is injected by Guard into CLS context
-    const tenantId = this.cls.get('tenantId');
+    const tenantId = this.cls.get<string>('tenantId');
     return this.orderService.createOrder(tenantId, dto);
   }
 
@@ -33,7 +33,7 @@ export class OrderController {
     description: 'Order cannot be shipped (wrong status)',
   })
   async ship(@Param('orderId') orderId: string) {
-    const tenantId = this.cls.get('tenantId');
+    const tenantId = this.cls.get<string>('tenantId');
     return this.orderService.shipOrder(tenantId, orderId);
   }
 }

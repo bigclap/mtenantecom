@@ -15,7 +15,7 @@ export class AuditLoggerMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const { statusCode } = res;
       const duration = Date.now() - startTime;
-      const tenantId = this.cls.get('tenantId') || 'unknown';
+      const tenantId = this.cls.get<string>('tenantId') || 'unknown';
 
       this.logger.log(
         `${method} ${originalUrl} ${statusCode} - ${duration}ms [Tenant: ${tenantId}]`,

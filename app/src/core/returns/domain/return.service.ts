@@ -147,4 +147,22 @@ export class ReturnService {
       itemsRestocked: itemsToRestock,
     });
   }
+
+  async markAsFailed(tenantId: string, returnId: string, error?: string) {
+    const returnRequest = await this.returnRepository.findById(
+      tenantId,
+      returnId,
+    );
+
+    if (!returnRequest || returnRequest.status !== 'PENDING') {
+      return;
+    }
+
+    await this.returnRepository.updateStatus(tenantId, returnId, 'FAILED');
+
+    await this.auditLogsService.createLog(tenantId, 'RETURN_FAILED', {
+      returnId,
+      error,
+    });
+  }
 }
