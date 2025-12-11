@@ -1,16 +1,10 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { MetricsService } from '../../../infrastructure/metrics/metrics.service';
+import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 import { CreateOrderDto } from '../gateway/dto/create-order.dto';
 import { Order, OrderStatus } from './order.entity';
 import { IOrderRepository } from './order.repository.interface';
-import { AuditLogsService } from '../../audit-logs/audit-logs.service';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
-import { StockService } from '../../stock/domain/stock.service';
-import { MetricsService } from '../../../infrastructure/metrics/metrics.service';
 
 @Injectable()
 export class OrderService {
@@ -19,7 +13,6 @@ export class OrderService {
     private readonly orderRepository: IOrderRepository,
     private readonly auditLogsService: AuditLogsService,
     private readonly prisma: PrismaService,
-    private readonly stockService: StockService,
     private readonly metricsService: MetricsService,
   ) {}
 
@@ -40,20 +33,7 @@ export class OrderService {
       }
     }
 
-    // 2. Check Stock Availability
-    const stockErrors = await this.stockService.checkStockAvailability(
-      tenantId,
-      dto.items,
-    );
-
-    if (stockErrors.length > 0) {
-      throw new UnprocessableEntityException({
-        message: 'Insufficient stock',
-        errors: stockErrors,
-      });
-    }
-
-    // 3. Create Transaction (delegated to repository)
+    // 2. Create Transaction (delegated to repository)
     // We start the transaction here to include Audit Log in the same transaction unit
     const createdOrder = await this.prisma.$transaction(async (tx) => {
       const order = await this.orderRepository.create(
