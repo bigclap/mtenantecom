@@ -1,15 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditLogsService } from './audit-logs.service';
-import {
-  AUDIT_LOG_REPOSITORY,
-  IAuditLogRepository,
-} from './domain/audit-log.repository.interface';
+import { AUDIT_LOG_REPOSITORY } from './domain/audit-log.repository.interface';
 import { AuditLog } from './domain/audit-log.entity';
 import * as crypto from 'crypto';
 
 describe('AuditLogsService', () => {
   let service: AuditLogsService;
-  let repository: IAuditLogRepository;
 
   const mockRepository = {
     create: jest.fn(),
@@ -28,16 +24,16 @@ describe('AuditLogsService', () => {
     }).compile();
 
     service = module.get<AuditLogsService>(AuditLogsService);
-    repository = module.get<IAuditLogRepository>(AUDIT_LOG_REPOSITORY);
 
     jest.clearAllMocks();
   });
 
   const stableStringify = (obj: any): string => {
     if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
-    const keys = Object.keys(obj).sort();
+    const typedObj = obj as Record<string, any>;
+    const keys = Object.keys(typedObj).sort();
     const parts: string[] = keys.map(
-      (key) => JSON.stringify(key) + ':' + stableStringify(obj[key]),
+      (key) => JSON.stringify(key) + ':' + stableStringify(typedObj[key]),
     );
     return '{' + parts.join(',') + '}';
   };

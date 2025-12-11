@@ -62,7 +62,10 @@ export class OrderPrismaRepository implements IOrderRepository {
     };
   }
 
-  async create(params: CreateOrderTxParams, externalTx?: Prisma.TransactionClient): Promise<Order> {
+  async create(
+    params: CreateOrderTxParams,
+    externalTx?: Prisma.TransactionClient,
+  ): Promise<Order> {
     const { tenantId, items } = params;
 
     const executeLogic = async (tx: Prisma.TransactionClient) => {
@@ -149,41 +152,46 @@ export class OrderPrismaRepository implements IOrderRepository {
     };
 
     if (externalTx) {
-        return executeLogic(externalTx);
+      return executeLogic(externalTx);
     }
-    
+
     return this.prisma.$transaction(executeLogic);
   }
 
-  async updateStatus(tenantId: string, orderId: string, status: string, externalTx?: Prisma.TransactionClient): Promise<Order> {
+  async updateStatus(
+    tenantId: string,
+    orderId: string,
+    status: string,
+    externalTx?: Prisma.TransactionClient,
+  ): Promise<Order> {
     const executeLogic = async (tx: Prisma.TransactionClient) => {
-        return tx.order.update({
-            where: { id: orderId },
-            data: { status: status as any },
-            include: { items: true },
-        });
+      return tx.order.update({
+        where: { id: orderId },
+        data: { status: status as any },
+        include: { items: true },
+      });
     };
 
     let order;
     if (externalTx) {
-        order = await executeLogic(externalTx);
+      order = await executeLogic(externalTx);
     } else {
-        order = await this.prisma.order.update({
-            where: { id: orderId },
-            data: { status: status as any },
-            include: { items: true },
-        });
+      order = await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: status as any },
+        include: { items: true },
+      });
     }
 
     return {
-        ...order,
-        customer: order.customer as Record<string, any>,
-        status: order.status as OrderStatus,
-        items: order.items.map((i) => ({
-            id: i.id,
-            sku: i.sku,
-            qty: i.qty,
-        })),
+      ...order,
+      customer: order.customer as Record<string, any>,
+      status: order.status as OrderStatus,
+      items: order.items.map((i) => ({
+        id: i.id,
+        sku: i.sku,
+        qty: i.qty,
+      })),
     };
   }
 }

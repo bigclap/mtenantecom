@@ -64,16 +64,16 @@ describe('OrderController - Ship Order (e2e)', () => {
     };
 
     const createRes = await request(app.getHttpServer())
-        .post('/orders')
-        .set('x-api-key', apiKey)
-        .send(createOrderDto)
-        .expect(201);
+      .post('/orders')
+      .set('x-api-key', apiKey)
+      .send(createOrderDto)
+      .expect(201);
 
     const orderId = createRes.body.id;
 
     // Verify stock reserved
     let stock = await prisma.stockLevel.findUnique({
-        where: { tenantId_sku: { tenantId, sku: 'SKU-SHIP-1' } }
+      where: { tenantId_sku: { tenantId, sku: 'SKU-SHIP-1' } },
     });
     expect(stock!.available).toBe(8);
     expect(stock!.reserved).toBe(2);
@@ -86,7 +86,7 @@ describe('OrderController - Ship Order (e2e)', () => {
 
     // 4. Verify Stock (reserved cleared)
     stock = await prisma.stockLevel.findUnique({
-        where: { tenantId_sku: { tenantId, sku: 'SKU-SHIP-1' } }
+      where: { tenantId_sku: { tenantId, sku: 'SKU-SHIP-1' } },
     });
     expect(stock!.available).toBe(8);
     expect(stock!.reserved).toBe(0);
@@ -97,48 +97,48 @@ describe('OrderController - Ship Order (e2e)', () => {
 
     // 6. Verify Audit Log
     const log = await prisma.auditLog.findFirst({
-        where: { tenantId, eventType: 'ORDER_SHIPPED' }
+      where: { tenantId, eventType: 'ORDER_SHIPPED' },
     });
     expect(log).toBeDefined();
     expect((log!.payload as any).orderId).toBe(orderId);
   });
 
   it('/orders/:orderId/ship (POST) - fail if already shipped', async () => {
-     // 1. Create Stock
-     await prisma.stockLevel.create({
-        data: {
-          tenantId,
-          sku: 'SKU-SHIP-2',
-          available: 10,
-          reserved: 0,
-        },
-      });
+    // 1. Create Stock
+    await prisma.stockLevel.create({
+      data: {
+        tenantId,
+        sku: 'SKU-SHIP-2',
+        available: 10,
+        reserved: 0,
+      },
+    });
 
-      // 2. Create Order
-      const createOrderDto: CreateOrderDto = {
-        externalId: 'ord-ship-2',
-        customer: { name: 'Test' },
-        items: [{ sku: 'SKU-SHIP-2', qty: 2 }],
-      };
+    // 2. Create Order
+    const createOrderDto: CreateOrderDto = {
+      externalId: 'ord-ship-2',
+      customer: { name: 'Test' },
+      items: [{ sku: 'SKU-SHIP-2', qty: 2 }],
+    };
 
-      const createRes = await request(app.getHttpServer())
-          .post('/orders')
-          .set('x-api-key', apiKey)
-          .send(createOrderDto)
-          .expect(201);
+    const createRes = await request(app.getHttpServer())
+      .post('/orders')
+      .set('x-api-key', apiKey)
+      .send(createOrderDto)
+      .expect(201);
 
-      const orderId = createRes.body.id;
+    const orderId = createRes.body.id;
 
-      // Manually set to SHIPPED
-      await prisma.order.update({
-          where: { id: orderId },
-          data: { status: 'SHIPPED' }
-      });
+    // Manually set to SHIPPED
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'SHIPPED' },
+    });
 
-      // 3. Try to Ship
-      await request(app.getHttpServer())
-        .post(`/orders/${orderId}/ship`)
-        .set('x-api-key', apiKey)
-        .expect(409);
+    // 3. Try to Ship
+    await request(app.getHttpServer())
+      .post(`/orders/${orderId}/ship`)
+      .set('x-api-key', apiKey)
+      .expect(409);
   });
 });

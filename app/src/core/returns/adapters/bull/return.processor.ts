@@ -28,7 +28,10 @@ export class ReturnProcessor extends WorkerHost {
           await this.returnService.processReturn(tenantId, returnId);
           this.logger.log(`Return ${returnId} processed successfully`);
         } catch (error) {
-          this.logger.error(`Failed to process return ${returnId}`, error.stack);
+          this.logger.error(
+            `Failed to process return ${returnId}`,
+            error.stack,
+          );
           throw error; // Let BullMQ handle retries
         }
       },

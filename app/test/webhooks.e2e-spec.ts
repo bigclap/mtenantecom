@@ -33,7 +33,10 @@ describe('ShopWebhookController (e2e)', () => {
     tenantId = tenant.id;
     tenantExternalId = 'tenant-ext-001';
 
-    const key = await tenantApiKeysService.createKey(tenantId, tenantExternalId);
+    const key = await tenantApiKeysService.createKey(
+      tenantId,
+      tenantExternalId,
+    );
     apiSecret = key.secret;
   });
 
@@ -57,9 +60,7 @@ describe('ShopWebhookController (e2e)', () => {
         name: 'Webhook User',
         email: 'webhook@example.com',
       },
-      items: [
-        { sku: 'SKU-WEB-1', qty: 1 },
-      ],
+      items: [{ sku: 'SKU-WEB-1', qty: 1 }],
     };
 
     // Ensure stock
@@ -92,9 +93,7 @@ describe('ShopWebhookController (e2e)', () => {
       customer: {
         name: 'Webhook User 2',
       },
-      items: [
-        { sku: 'SKU-WEB-2', qty: 1 },
-      ],
+      items: [{ sku: 'SKU-WEB-2', qty: 1 }],
     };
 
     // Ensure stock

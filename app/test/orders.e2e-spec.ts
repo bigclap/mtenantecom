@@ -52,9 +52,7 @@ describe('OrderController (e2e)', () => {
         name: 'John Doe',
         email: 'john@example.com',
       },
-      items: [
-        { sku: 'SKU-1', qty: 2 },
-      ],
+      items: [{ sku: 'SKU-1', qty: 2 }],
     };
 
     // First, ensure stock exists for SKU-1
@@ -83,9 +81,7 @@ describe('OrderController (e2e)', () => {
       customer: {
         name: 'Jane Doe',
       },
-      items: [
-        { sku: 'SKU-2', qty: 1 },
-      ],
+      items: [{ sku: 'SKU-2', qty: 1 }],
     };
 
     // Ensure stock

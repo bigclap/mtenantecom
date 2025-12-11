@@ -37,7 +37,9 @@ describe('OrderService', () => {
         {
           provide: PrismaService,
           useValue: {
-            $transaction: jest.fn((cb) => cb({ stockLevel: { updateMany: jest.fn() } })),
+            $transaction: jest.fn((cb) =>
+              cb({ stockLevel: { updateMany: jest.fn() } }),
+            ),
           },
         },
         {

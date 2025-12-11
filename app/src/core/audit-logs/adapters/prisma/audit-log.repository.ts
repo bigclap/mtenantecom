@@ -33,7 +33,7 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
         data: {
           tenantId,
           eventType,
-          payload,
+          payload: payload as Prisma.InputJsonValue,
           prevHash,
           hash: newHash,
         },

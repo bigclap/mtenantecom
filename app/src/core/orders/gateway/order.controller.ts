@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Param,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderService } from '../domain/order.service';
@@ -34,7 +28,10 @@ export class OrderController {
   @Post(':orderId/ship')
   @ApiOperation({ summary: 'Ship an order' })
   @ApiResponse({ status: 200, description: 'Order shipped' })
-  @ApiResponse({ status: 409, description: 'Order cannot be shipped (wrong status)' })
+  @ApiResponse({
+    status: 409,
+    description: 'Order cannot be shipped (wrong status)',
+  })
   async ship(@Param('orderId') orderId: string) {
     const tenantId = this.cls.get('tenantId');
     return this.orderService.shipOrder(tenantId, orderId);

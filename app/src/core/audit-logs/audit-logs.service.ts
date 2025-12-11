@@ -22,9 +22,10 @@ export class AuditLogsService {
         '[' + obj.map((item) => this.stableStringify(item)).join(',') + ']'
       );
     }
-    const keys = Object.keys(obj).sort();
+    const typedObj = obj as Record<string, any>;
+    const keys = Object.keys(typedObj).sort();
     const parts = keys.map(
-      (key) => JSON.stringify(key) + ':' + this.stableStringify(obj[key]),
+      (key) => JSON.stringify(key) + ':' + this.stableStringify(typedObj[key]),
     );
     return '{' + parts.join(',') + '}';
   }

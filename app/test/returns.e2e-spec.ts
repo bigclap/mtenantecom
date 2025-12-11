@@ -42,16 +42,16 @@ describe('ReturnController (e2e)', () => {
 
     // 3. Setup Order
     const order = await prisma.order.create({
-        data: {
-            tenantId,
-            externalId: 'ord-ret-1',
-            status: 'SHIPPED',
-            customer: { name: 'Returner' },
-            items: {
-                create: [{ tenantId, sku: 'SKU-RET-1', qty: 5 }]
-            }
+      data: {
+        tenantId,
+        externalId: 'ord-ret-1',
+        status: 'SHIPPED',
+        customer: { name: 'Returner' },
+        items: {
+          create: [{ tenantId, sku: 'SKU-RET-1', qty: 5 }],
         },
-        include: { items: true }
+      },
+      include: { items: true },
     });
     orderId = order.id;
     orderItemId = order.items[0].id;
@@ -79,15 +79,15 @@ describe('ReturnController (e2e)', () => {
 
   it('/returns (POST) - create return request', async () => {
     const createReturnDto: CreateReturnDto = {
-        orderId: orderId,
-        items: [{ sku: 'SKU-RET-1', qty: 2, reason: 'Broken' }]
+      orderId: orderId,
+      items: [{ sku: 'SKU-RET-1', qty: 2, reason: 'Broken' }],
     };
 
     const res = await request(app.getHttpServer())
-        .post('/returns')
-        .set('x-api-key', apiKey)
-        .send(createReturnDto)
-        .expect(201);
+      .post('/returns')
+      .set('x-api-key', apiKey)
+      .send(createReturnDto)
+      .expect(201);
 
     expect(res.body.status).toBe('PENDING');
 
@@ -98,21 +98,21 @@ describe('ReturnController (e2e)', () => {
     const maxRetries = 20;
     let found = false;
     for (let i = 0; i < maxRetries; i++) {
-        const ret = await prisma.return.findUnique({
-            where: { id: res.body.id }
-        });
-        if (ret && ret.status === 'APPROVED') {
-            found = true;
-            break;
-        }
-        await new Promise(r => setTimeout(r, 500));
+      const ret = await prisma.return.findUnique({
+        where: { id: res.body.id },
+      });
+      if (ret && ret.status === 'APPROVED') {
+        found = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
     }
 
     expect(found).toBe(true);
 
     // Check Stock Restock
     const stock = await prisma.stockLevel.findUnique({
-        where: { tenantId_sku: { tenantId, sku: 'SKU-RET-1' } }
+      where: { tenantId_sku: { tenantId, sku: 'SKU-RET-1' } },
     });
     // Initial: 10. Order 5 -> Reserved 5.
     // Wait, createOrder doesn't decrement available immediately?
@@ -131,11 +131,11 @@ describe('ReturnController (e2e)', () => {
 
     // Check Audit Log
     const logs = await prisma.auditLog.findMany({
-        where: { tenantId },
-        orderBy: { createdAt: 'desc' }
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
     });
     // Should have RETURN_REQUESTED and RETURN_APPROVED
-    const actions = logs.map(l => l.eventType);
+    const actions = logs.map((l) => l.eventType);
     expect(actions).toContain('RETURN_REQUESTED');
     expect(actions).toContain('RETURN_APPROVED');
   });

@@ -7,10 +7,13 @@ import * as crypto from 'crypto';
 export class TenantApiKeysService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createKey(tenantId: string, externalId?: string): Promise<TenantApiKey> {
+  async createKey(
+    tenantId: string,
+    externalId?: string,
+  ): Promise<TenantApiKey> {
     const key = crypto.randomBytes(32).toString('hex');
     const secret = crypto.randomBytes(32).toString('hex');
-    
+
     return this.prisma.tenantApiKey.create({
       data: {
         tenantId,
