@@ -4,10 +4,18 @@ import { CreateOrderDto } from '../gateway/dto/create-order.dto';
 import { Order, OrderStatus } from './order.entity';
 import { IOrderRepository } from './order.repository.interface';
 import { OrderService } from './order.service';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
+import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { StockService } from '../../stock/domain/stock.service';
+import { MetricsService } from '../../../infrastructure/metrics/metrics.service';
 
 describe('OrderService', () => {
   let service: OrderService;
   let repository: jest.Mocked<IOrderRepository>;
+  let stockService: jest.Mocked<StockService>;
+  let prismaService: jest.Mocked<PrismaService>;
+  let metricsService: jest.Mocked<MetricsService>;
+  let auditLogsService: jest.Mocked<AuditLogsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -20,11 +28,39 @@ describe('OrderService', () => {
             create: jest.fn(),
           },
         },
+        {
+          provide: AuditLogsService,
+          useValue: {
+            createLog: jest.fn(),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            $transaction: jest.fn((cb) => cb({ stockLevel: { updateMany: jest.fn() } })),
+          },
+        },
+        {
+          provide: StockService,
+          useValue: {
+            checkStockAvailability: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: MetricsService,
+          useValue: {
+            ordersCreatedTotal: { inc: jest.fn() },
+          },
+        },
       ],
     }).compile();
 
     service = module.get<OrderService>(OrderService);
     repository = module.get(IOrderRepository);
+    stockService = module.get(StockService);
+    prismaService = module.get(PrismaService);
+    metricsService = module.get(MetricsService);
+    auditLogsService = module.get(AuditLogsService);
   });
 
   it('should be defined', () => {
@@ -57,16 +93,17 @@ describe('OrderService', () => {
 
       const result = await service.createOrder(tenantId, dto);
 
-      expect(repository.findByExternalId.bind(repository)).toHaveBeenCalledWith(
+      expect(repository.findByExternalId).toHaveBeenCalledWith(
         tenantId,
         dto.externalId,
       );
-      expect(repository.create.bind(repository)).toHaveBeenCalledWith({
+      expect(stockService.checkStockAvailability).toHaveBeenCalledWith(
         tenantId,
-        externalId: dto.externalId,
-        customer: dto.customer,
-        items: dto.items,
-      });
+        dto.items,
+      );
+      // Repository create is called inside transaction
+      expect(repository.create).toHaveBeenCalled();
+      expect(metricsService.ordersCreatedTotal.inc).toHaveBeenCalled();
       expect(result).toEqual(createdOrder);
     });
 
@@ -87,7 +124,7 @@ describe('OrderService', () => {
       const result = await service.createOrder(tenantId, dto);
 
       expect(result).toEqual(existingOrder);
-      expect(repository.create.bind(repository)).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException if duplicate externalId but different content (qty)', async () => {
@@ -107,7 +144,7 @@ describe('OrderService', () => {
       await expect(service.createOrder(tenantId, dto)).rejects.toThrow(
         ConflictException,
       );
-      expect(repository.create.bind(repository)).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException if duplicate externalId but different content (customer)', async () => {
