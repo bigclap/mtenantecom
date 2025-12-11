@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ClsModule } from 'nestjs-cls';
 import * as Joi from 'joi';
@@ -12,6 +12,7 @@ import { AuditLogsModule } from './core/audit-logs/audit-logs.module';
 import { WebhookEventsModule } from './core/webhook-events/webhook-events.module';
 import { TenantApiKeysModule } from './core/tenant-api-keys/tenant-api-keys.module';
 import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
+import { AuditLoggerMiddleware } from './infrastructure/middleware/audit-logger.middleware';
 
 @Module({
   imports: [
@@ -52,4 +53,8 @@ import { ShopBasicModule } from './integrations/shop-basic/shop-basic.module';
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuditLoggerMiddleware).forRoutes('*');
+  }
+}

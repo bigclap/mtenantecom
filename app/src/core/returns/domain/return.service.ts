@@ -140,5 +140,11 @@ export class ReturnService {
       returnId,
       itemsToRestock,
     );
+
+    // 4. Audit Log
+    await this.auditLogsService.createLog(tenantId, 'RETURN_APPROVED', {
+      returnId,
+      itemsRestocked: itemsToRestock,
+    });
   }
 }
