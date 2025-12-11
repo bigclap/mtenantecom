@@ -74,5 +74,30 @@ services:
       - /app/node_modules
     command: sh -c "npx prisma generate && npm run start:dev"
 
+  e2e:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: e2e
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npx prisma db push --accept-data-loss && npm run test:e2e"
+
 volumes:
   postgres_data:
